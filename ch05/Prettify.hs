@@ -1,4 +1,4 @@
-module PrettyStub where
+module Prettify where
 
 import SimpleJSON
 
@@ -22,3 +22,12 @@ char c = undefined
 
 hcat :: [Doc] -> Doc
 hcat xs = undefined
+
+fsep :: [Doc] -> Doc
+fsep xs = undefined
+
+
+punctuate :: Doc -> [Doc] -> [Doc]
+punctuate p [] = []
+punctuate p [d] = [d]
+punctuate p (d:ds) = (d <> p) : punctuate p ds
