@@ -2,30 +2,61 @@ module Prettify where
 
 import SimpleJSON
 
-data Doc = ToBeDefined
-         deriving (Show)
+data Doc = Empty 
+         | Char Char
+         | Text String
+         | Line
+         | Concat Doc Doc
+         | Union Doc Doc
+           deriving (Show, Eq)
 
-string :: String -> Doc
-string str = undefined
+empty :: Doc
+empty = Empty
+
+line :: Doc
+line = Line 
 
 text :: String -> Doc
-text str = undefined
+text "" = Empty
+text s = Text s
 
 double :: Double -> Doc
-double num = undefined
+double d = text (show d)
 
 (<>) :: Doc -> Doc -> Doc
-a <> b = undefined
+Empty <> y = y
+x <> Empty = x
+x <> y = x `Concat` y 
 
 char :: Char -> Doc
-char c = undefined
+char c = Char c
 
 hcat :: [Doc] -> Doc
-hcat xs = undefined
+hcat = fold (<>)
 
 fsep :: [Doc] -> Doc
-fsep xs = undefined
+fsep = fold (</>)
 
+(</>) :: Doc -> Doc -> Doc
+x </> y = x <> softline <> y
+
+softline :: Doc
+softline = group line
+
+group :: Doc -> Doc
+group x = flatten x `Union` x
+
+flatten :: Doc -> Doc
+flatten (x `Concat` y) = flatten x `Concat` flatten y
+flatten Line           = Char ' '
+flatten (x `Union` _)  = flatten x
+flatten other          = other
+
+concat :: [[a]] -> [a]
+concat = foldr (++) []
+
+fold :: (Doc -> Doc -> Doc) -> [Doc] -> Doc
+fold f = foldr f empty
 
 punctuate :: Doc -> [Doc] -> [Doc]
 punctuate p [] = []
