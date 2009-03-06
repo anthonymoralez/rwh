@@ -6,7 +6,7 @@ import Data.Bits (shiftR, (.&.))
 
 import SimpleJSON (JValue(..))
 import Prettify (Doc, (<>), char, double, fsep, hcat, punctuate, text,
-                 compact)
+                 compact, pretty)
 
 string :: String -> Doc
 string = enclose '"' '"' . hcat . map oneChar
