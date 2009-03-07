@@ -1,4 +1,7 @@
-module PrettyJSON where
+module PrettyJSON (
+                    renderJValue
+                  , value 
+                  ) where
 
 import Numeric (showHex)
 import Data.Char (ord)
@@ -6,7 +9,7 @@ import Data.Bits (shiftR, (.&.))
 
 import SimpleJSON (JValue(..))
 import Prettify (Doc, (<>), char, double, fsep, hcat, punctuate, text,
-                 compact, pretty)
+                 compact, pretty, fill)
 
 string :: String -> Doc
 string = enclose '"' '"' . hcat . map oneChar
@@ -56,3 +59,6 @@ renderJValue (JObject obj) = series '{' '}' field obj
     where field (name,val) = string name 
                           <> text ": "
                           <> renderJValue val
+
+value :: Doc
+value = renderJValue (JObject [("f", JNumber 1), ("q", JBool True)]) 

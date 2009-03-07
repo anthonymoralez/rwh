@@ -95,3 +95,43 @@ w `fits` _ | w < 0 = False
 _ `fits` ""        = True
 _ `fits` ('\n':_)  = True
 w `fits` (_:cs)    = (w - 1) `fits` cs
+
+{- Exercise 1. Write a function, fill, with the following type signature.
+ - It should add spaces to a document until it is the given number of columns 
+ - wide. If it is already wider than this value, it should add no spaces.
+fill :: Int -> Doc -> Doc
+fill w doc | w > len  = text (replicate (w - len) ' ') <> flatDoc
+           | otherwise = flatDoc
+           where len = width flatDoc
+                 flatDoc = flatten doc
+width :: Doc -> Int 
+width (Char _)       = 1
+width (Text s)       = length s
+width (a `Concat` b) = (width a) + (width b)
+width (a `Union` b)  = (width a) `min` (width b)
+width _              = 0
+
+ -}
+
+spaces :: Int -> Doc
+spaces n = Text $ replicate n ' '
+
+fill :: Int -> Doc -> Doc 
+fill width d = snd $ walk width 0 d
+
+walk :: Int -> Int -> Doc -> (Int, Doc)
+walk _ col Empty       = (col, Empty)
+walk _ col c@(Char _)  = (col + 1, c)
+walk _ col t@(Text s)  = (col + (length s), t)
+walk w col (a `Concat` (_ `Union` Line)) = ((max len w), a'' `Concat` Line)
+                                    where (len, a') = walk w 0 a
+                                          a'' = (spaces (w - len)) `Concat` a' 
+walk w col (a `Concat` b) = let (col',  a') = walk w col a
+                                (col'', b') = walk w col' b
+                                in (col'', a' `Concat` b')
+walk w col (a `Union` _) = (len, a)
+                         where (len, _) = walk w col a
+walk _ _ Line = (0, Line)
+
+val = (Char '{') </> (Text "123456789") </> (Char '}')
+
