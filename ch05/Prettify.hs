@@ -1,5 +1,8 @@
 module Prettify where
 
+import Prelude hiding (length)
+import qualified Prelude(length)
+
 data Doc = Empty 
          | Char Char
          | Text String
@@ -79,7 +82,7 @@ pretty width x = best 0 [x]
               case d of 
                 Empty        -> best col ds
                 Char c       -> c : best (col + 1) ds
-                Text s       -> s ++ best (col + length s) ds
+                Text s       -> s ++ best (col + Prelude.length s) ds
                 Line         -> '\n' : best 0 ds
                 a `Concat` b -> best col (a:b:ds)
                 a `Union` b  -> nicest col (best col (a:ds))
@@ -102,36 +105,32 @@ w `fits` (_:cs)    = (w - 1) `fits` cs
 fill :: Int -> Doc -> Doc
 fill w doc | w > len  = text (replicate (w - len) ' ') <> flatDoc
            | otherwise = flatDoc
-           where len = width flatDoc
+           where len = length flatDoc
                  flatDoc = flatten doc
-width :: Doc -> Int 
-width (Char _)       = 1
-width (Text s)       = length s
-width (a `Concat` b) = (width a) + (width b)
-width (a `Union` b)  = (width a) `min` (width b)
-width _              = 0
-
  -}
+
+fill :: Int -> Doc -> Doc 
+fill width doc = fold joinLines (linesDoc doc)
+                   where joinLines a b =  (insertSpaces a) <> (insertSpaces b)
+                         insertSpaces doc = (spaces (width - (length doc))) <> doc 
+
+linesDoc :: Doc -> [Doc]
+linesDoc doc = foldr concatLines [] (toList doc)  
+    where concatLines :: Doc -> [Doc] -> [Doc]
+          concatLines l@(Line) docs = l : docs 
+          concatLines u@(Union _ Line) docs = u : docs 
+          concatLines doc (d:ds) = (Concat doc d) : ds
+          concatLines doc [] = [doc]
+          toList :: Doc -> [Doc] 
+          toList (Concat a b) = (toList a) ++ (toList b)
+          toList doc = [doc]
+
+length :: Doc -> Int 
+length (Char _)       = 1
+length (Text s)       = Prelude.length s
+length (a `Concat` b) = (length a) + (length b)
+length (a `Union` b)  = (length a) `min` (length b)
+length _              = 0
 
 spaces :: Int -> Doc
 spaces n = Text $ replicate n ' '
-
-fill :: Int -> Doc -> Doc 
-fill width d = snd $ walk width 0 d
-
-walk :: Int -> Int -> Doc -> (Int, Doc)
-walk _ col Empty       = (col, Empty)
-walk _ col c@(Char _)  = (col + 1, c)
-walk _ col t@(Text s)  = (col + (length s), t)
-walk w col (a `Concat` (_ `Union` Line)) = ((max len w), a'' `Concat` Line)
-                                    where (len, a') = walk w 0 a
-                                          a'' = (spaces (w - len)) `Concat` a' 
-walk w col (a `Concat` b) = let (col',  a') = walk w col a
-                                (col'', b') = walk w col' b
-                                in (col'', a' `Concat` b')
-walk w col (a `Union` _) = (len, a)
-                         where (len, _) = walk w col a
-walk _ _ Line = (0, Line)
-
-val = (Char '{') </> (Text "123456789") </> (Char '}')
-
