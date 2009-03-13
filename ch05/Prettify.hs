@@ -121,9 +121,10 @@ linesDoc doc = foldr concatLines [] (toList doc)
           concatLines u@(Union _ Line) docs = u : docs 
           concatLines doc (d:ds) = (Concat doc d) : ds
           concatLines doc [] = [doc]
-          toList :: Doc -> [Doc] 
-          toList (Concat a b) = (toList a) ++ (toList b)
-          toList doc = [doc]
+
+toList :: Doc -> [Doc] 
+toList (Concat a b) = (toList a) ++ (toList b)
+toList doc = [doc]
 
 length :: Doc -> Int 
 length (Char _)       = 1
@@ -134,3 +135,30 @@ length _              = 0
 
 spaces :: Int -> Doc
 spaces n = Text $ replicate n ' '
+
+
+{- Exercise 2.
+ - Our pretty printer does not take nesting into account. Whenever we open 
+ - parentheses, braces, or brackets, any lines that follow should be indented so
+ - that they are aligned with the opening character until a matching closing 
+ - character is encountered. Add support for nesting, with a controllable amount 
+ - of indentation.
+ -}
+
+nest :: Int -> Doc -> Doc
+nest widthOfIndent doc = indent 0 (linesDoc doc)
+    where indent :: Int -> [Doc] -> Doc
+          indent _ [] = empty
+          indent level (d:ds) = ((spaces (widthOfIndent * level)) <> d) <> indent level' ds
+                                where level' = level + (indentDelta (toList d))
+
+indentDelta :: [Doc] -> Int
+indentDelta = foldr countBrackets 0  
+    where countBrackets (Char c) i | openIndentChar c  = i+1
+                                   | closeIndentChar c = i-1
+                                   | otherwise         = i
+          countBrackets _ i = i
+
+openIndentChar, closeIndentChar :: Char -> Bool
+openIndentChar = flip elem "([{" 
+closeIndentChar = flip elem ")]}" 
