@@ -1,4 +1,5 @@
 -- NOTE: you must add -i../ch05 to the ghc(i) command-line for this to work 
+{-# LANGUAGE TypeSynonymInstances #-}
 import SimpleJSON
 
 type JSONError = String
@@ -15,3 +16,8 @@ instance JSON Bool where
     toJValue = JBool
     fromJValue (JBool b) = Right b
     fromJValue _ = Left "not a JSON boolean"
+
+instance JSON String where
+    toJValue               = JString
+    fromJValue (JString s) = Right s
+    fromJValue _           = Left "not a JSON string"
