@@ -5,32 +5,36 @@ module GlobRegex
     ) where
 
 import Text.Regex.Posix ((=~))
+import Data.Char (toUpper)
 
-globToRegex :: String -> String
-globToRegex cs = '^' : globToRegex' cs ++ "$"
+globToRegex :: Bool -> String -> String
+globToRegex caseSensitive cs = '^' : (globToRegex' caseSensitive cs) ++ "$"
 
-globToRegex' :: String -> String
-globToRegex' "" = ""
+globToRegex' :: Bool -> String -> String
+globToRegex' _ "" = ""
 
-globToRegex' ('*':cs) = ".*" ++ globToRegex' cs
+globToRegex' caseSensitive ('*':cs) = ".*" ++ globToRegex' caseSensitive cs
 
-globToRegex' ('?':cs) = '.' : globToRegex' cs
+globToRegex' caseSensitive ('?':cs) = '.' : globToRegex' caseSensitive cs
 
-globToRegex' ('[':'!':c:cs) = "[^" ++ c : charClass cs
-globToRegex' ('[':c:cs)     = '[' : c : charClass cs
-globToRegex' ('[':_)        = error "unterminated character class"
+globToRegex' caseSensitive ('[':'!':c:cs) = "[^" ++ c : toUpper c : charClass caseSensitive cs
+globToRegex' caseSensitive ('[':c:cs)     = '[' : c : toUpper c : charClass caseSensitive cs
+globToRegex' _ ('[':_)                    = error "unterminated character class"
 
-globToRegex' (c:cs) = escape c ++ globToRegex' cs
+globToRegex' caseSensitive (c:cs) = escape caseSensitive c ++ globToRegex' caseSensitive cs
 
-escape :: Char -> String
-escape c | c `elem` regexChars = '\\' : [c]
-         | otherwise = [c]
+escape :: Bool -> Char -> String
+escape caseSensitive c | c `elem` regexChars = '\\' : [c]
+                       | otherwise = if caseSensitive 
+                                        then '[' : c : toUpper c : "]"
+                                        else [c]
     where regexChars = "\\+()^$.{}]|"
 
-charClass :: String -> String
-charClass (']':cs) = ']' : globToRegex' cs
-charClass (c:cs)   = c : charClass cs
-charClass []       = error "unterminated character class"
+charClass :: Bool -> String -> String
+charClass caseSensitive (']':cs) = ']' : globToRegex' caseSensitive cs
+charClass caseSensitive (c:cs)   = c : toUpper c : charClass caseSensitive cs
+charClass _ []                   = error "unterminated character class"
 
-matchesGlob :: FilePath -> String -> Bool
-name `matchesGlob` pat = name =~ globToRegex pat
+matchesGlob :: Bool -> FilePath -> String -> Bool
+matchesGlob caseSensitive name pat = name =~ globToRegex caseSensitive pat
+
