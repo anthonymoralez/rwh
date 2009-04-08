@@ -35,6 +35,8 @@ charClass caseSensitive (']':cs) = ']' : globToRegex' caseSensitive cs
 charClass caseSensitive (c:cs)   = c : toUpper c : charClass caseSensitive cs
 charClass _ []                   = error "unterminated character class"
 
-matchesGlob :: Bool -> FilePath -> String -> Bool
-matchesGlob caseSensitive name pat = name =~ globToRegex caseSensitive pat
+matchesGlob' :: Bool -> FilePath -> String -> Bool
+matchesGlob' caseSensitive name pat = name =~ globToRegex caseSensitive pat
 
+matchesGlob :: FilePath -> String -> Bool
+matchesGlob = matchesGlob' True
